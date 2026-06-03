@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumark HR</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyACFchl6LtzQAWk_VuvMj7XVZCqUwyhcFA",
+    authDomain: "lumarkbd.firebaseapp.com",
+    projectId: "lumarkbd",
+    storageBucket: "lumarkbd.firebasestorage.app",
+    messagingSenderId: "91842916197",
+    appId: "1:91842916197:web:f515a27c3fc3c8cb7dbb8c"
+  };
+  const app = initializeApp(firebaseConfig);
+  window._fbAuth    = getAuth(app);
+  window._fbSignIn  = signInWithEmailAndPassword;
+  window._fbSignOut = signOut;
+  window._fbOnAuth  = onAuthStateChanged;
+  window.dispatchEvent(new Event('firebaseReady'));
+</script>
+<style>
+:root {
+  --bg:#f7f5f0;
+  --bg2:#f0ede6;
+  --surface:#ffffff;
+  --surface2:#faf8f4;
+  --border:#e8e4db;
+  --border2:#d4cfc4;
+  --text:#1c1917;
+  --text2:#57534e;
+  --text3:#a8a29e;
+  --accent:#2d6a4f;
+  --accent2:#40916c;
+  --accent-bg:#f0faf5;
+  --green:#15803d;
+  --green-bg:#f0fdf4;
+  --red:#dc2626;
+  --red-bg:#fef2f2;
+  --amber:#b45309;
+  --amber-bg:#fffbeb;
+  --teal:#0d7490;
+  --teal-bg:#f0f9ff;
+  --shadow:0 1px 4px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.04);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.08);
+  --radius:14px; --radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+
+#app{display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:1;}
+
+/* Topbar */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 var(--border);}
+.topbar-brand{font-size:17px;font-weight:800;color:var(--text);letter-spacing:-.4px;white-space:nowrap;}
+.topbar-nav{display:flex;align-items:center;gap:2px;margin:0 16px;}
+.nav-item{display:flex;align-items:center;gap:6px;padding:6px 12px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;border-radius:99px;transition:all .2s;border:1px solid transparent;white-space:nowrap;}
+.nav-item:hover{background:var(--bg2);color:var(--text);}
+.nav-item.active{background:var(--accent-bg);color:var(--accent);border-color:rgba(45,106,79,0.2);font-weight:600;}
+.nav-icon{font-size:14px;}
+.nav-badge{background:#ff4d6d;color:#fff;border-radius:99px;font-size:10px;padding:1px 6px;font-weight:700;}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.user-chip{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;background:var(--surface2);border:1px solid var(--border);border-radius:99px;}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.user-name{font-size:13px;font-weight:600;color:var(--text);}
+.user-role-badge{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;}
+.role-ceo{background:#fef9c3;color:#854d0e;border:1px solid #fde68a;}
+.role-manager{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(45,106,79,0.2);}
+.role-staff{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.btn-logout{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 14px;font-size:13px;color:var(--text2);cursor:pointer;transition:all .2s;}
+.btn-logout:hover{background:var(--bg2);color:var(--text);}
+
+/* Mobile nav */
+.mobile-nav{display:none;background:var(--surface);border-top:1px solid var(--border);padding:8px 12px;position:fixed;bottom:0;left:0;right:0;z-index:100;justify-content:space-around;box-shadow:0 -1px 0 var(--border);}
+.mobile-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 12px;cursor:pointer;color:var(--text3);font-size:10px;font-weight:500;border-radius:var(--radius-sm);transition:all .2s;position:relative;}
+.mobile-nav-item.active{color:var(--accent);background:var(--accent-bg);}
+.mobile-nav-item .nav-icon{font-size:20px;}
+.mobile-nav-badge{position:absolute;top:4px;right:8px;background:#ff4d6d;color:#fff;border-radius:99px;font-size:9px;padding:0 5px;font-weight:700;}
+
+@media(max-width:768px){
+  .topbar-nav{display:none;}
+  .mobile-nav{display:flex;}
+  .user-name{display:none;}
+  .topbar{padding:0 12px;}
+  .main{padding-bottom:80px;}
+}
+
+/* Layout */
+.layout{display:flex;flex:1;justify-content:center;padding:28px 20px 48px;background:var(--bg);}
+.main{width:100%;max-width:860px;}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;box-shadow:var(--shadow);}
+.card-title{font-size:15px;font-weight:600;margin-bottom:16px;color:var(--text);}
+.page-title{font-size:18px;font-weight:700;margin-bottom:16px;color:var(--text);letter-spacing:-.3px;}
+
+/* Buttons */
+.btn{padding:8px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(45,106,79,0.2);}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-1px);}
+.btn-success{background:#15803d;color:#fff;}
+.btn-success:hover{background:#166534;transform:translateY(-1px);}
+.btn-danger{background:#dc2626;color:#fff;}
+.btn-danger:hover{background:#b91c1c;transform:translateY(-1px);}
+.btn-outline{background:none;border:1px solid var(--border2);color:var(--text);}
+.btn-outline:hover{background:var(--bg2);}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important;}
+
+/* Forms */
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:var(--text2);}
+.form-control{width:100%;padding:9px 13px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);transition:all .2s;}
+.form-control:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(45,106,79,0.1);}
+select.form-control{cursor:pointer;}
+textarea.form-control{resize:vertical;min-height:80px;}
+
+/* Badges */
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;}
+.badge-pending{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(217,119,6,0.2);}
+.badge-manager_approved{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(13,148,136,0.2);}
+.badge-approved{background:var(--green-bg);color:var(--green);border:1px solid rgba(5,150,105,0.2);}
+.badge-rejected{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,0.2);}
+.badge-late{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,0.2);}
+.badge-on-time{background:var(--green-bg);color:var(--green);border:1px solid rgba(5,150,105,0.2);}
+
+/* 統一頁首 */
+.page-card{padding:0;overflow:hidden;}
+.page-header{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.page-header-brand{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.3px;margin-right:4px;white-space:nowrap;}
+.page-header-nav{display:flex;align-items:center;gap:2px;flex:1;}
+.page-header-user{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0;}
+.clock-nav-item{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:99px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;border:1px solid transparent;position:relative;white-space:nowrap;}
+.clock-nav-item:hover{background:var(--bg);color:var(--text);}
+.clock-nav-item.active{background:var(--accent-bg);color:var(--accent);border-color:rgba(45,106,79,0.15);font-weight:600;}
+.page-content-title{font-size:18px;font-weight:700;margin-bottom:16px;color:var(--text);letter-spacing:-.3px;}
+@media(max-width:768px){
+  .page-header{gap:10px;}
+  .page-header-nav{order:3;width:100%;flex-wrap:wrap;}
+  .page-header-user .user-name{display:none;}
+  .page-header-user .btn-logout{display:none;}
+}
+
+/* Clock */
+.clock-display{text-align:center;padding:32px 24px;}
+.clock-time{font-size:64px;font-weight:700;letter-spacing:-3px;color:var(--text);margin-bottom:6px;font-variant-numeric:tabular-nums;}
+.clock-date{font-size:14px;color:var(--text2);margin-bottom:28px;font-weight:500;}
+.clock-btns{display:flex;gap:16px;justify-content:center;}
+.clock-btn{padding:16px 40px;font-size:15px;font-weight:700;border-radius:var(--radius);border:none;cursor:pointer;transition:all .2s;}
+.clock-btn-in{background:#15803d;color:#fff;box-shadow:0 4px 12px rgba(21,128,61,0.25);}
+.clock-btn-in:hover{background:#166534;transform:translateY(-2px);}
+.clock-btn-out{background:#dc2626;color:#fff;box-shadow:0 4px 12px rgba(220,38,38,0.2);}
+.clock-btn-out:hover{background:#b91c1c;transform:translateY(-2px);}
+.clock-btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none;}
+.clock-status{margin-top:20px;padding:12px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;display:inline-block;}
+.clock-status.clocked-in{background:var(--green-bg);color:var(--green);border:1px solid rgba(5,150,105,0.2);}
+.clock-status.clocked-out{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+
+/* Progress */
+.progress-bar{height:6px;background:rgba(255,255,255,0.25);border-radius:99px;overflow:hidden;margin-top:6px;}
+.progress-fill{height:100%;border-radius:99px;background:var(--accent);transition:width .4s ease;}
+.progress-fill.warn{background:var(--amber);}
+.progress-fill.danger{background:var(--red);}
+
+/* Quota */
+.quota-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
+.quota-card{padding:16px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--border);transition:transform .2s;}
+.quota-card:hover{transform:translateY(-2px);}
+.quota-name{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+.quota-nums{font-size:22px;font-weight:800;color:var(--text);}
+.quota-nums span{font-size:12px;font-weight:400;color:var(--text3);}
+.quota-unlimited{font-size:11px;color:var(--purple);background:var(--purple-bg);padding:2px 8px;border-radius:99px;font-weight:600;display:inline-block;margin-top:4px;}
+
+/* Table */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;padding:10px 14px;font-size:12px;font-weight:600;color:var(--text2);border-bottom:2px solid var(--border);white-space:nowrap;letter-spacing:.3px;}
+td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.empty-state{text-align:center;padding:40px;color:var(--text3);font-size:14px;}
+
+/* Login */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:44px 40px;width:380px;box-shadow:var(--shadow-lg);}
+.login-logo{width:52px;height:52px;border-radius:14px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 20px;}
+.login-brand{font-size:22px;font-weight:800;color:var(--text);text-align:center;margin-bottom:4px;letter-spacing:-.4px;}
+.login-sub{color:var(--text3);font-size:13px;margin-bottom:28px;text-align:center;}
+.login-card .form-label{color:var(--text2);}
+.login-error{color:#fca5a5;font-size:13px;margin-bottom:10px;display:none;text-align:center;}
+.login-btn-wrap{position:relative;}
+.login-spinner{display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);width:16px;height:16px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:translateY(-50%) rotate(360deg);}}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.3);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;width:100%;max-width:480px;box-shadow:var(--shadow-lg);}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:18px;color:var(--text);}
+.modal .form-label{color:var(--text2);}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+.modal .btn-outline{background:var(--surface2);border-color:var(--border2);color:var(--text);}
+
+/* 打卡彈窗通知 */
+.checkin-popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px;animation:fadeIn .3s ease;}
+.checkin-popup{background:var(--surface);border-radius:28px;padding:40px 36px;text-align:center;max-width:380px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.15);animation:popIn .4s cubic-bezier(.34,1.56,.64,1);border:1px solid var(--border);}
+.checkin-popup-icon{font-size:64px;margin-bottom:16px;animation:bounce 1s ease infinite alternate;}
+.checkin-popup-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:-.4px;}
+.checkin-popup-msg{font-size:15px;color:var(--text2);margin-bottom:24px;line-height:1.6;}
+.checkin-popup-time{font-size:13px;color:var(--text3);margin-bottom:24px;}
+.checkin-popup-btn{background:var(--accent);color:#fff;border:none;padding:12px 32px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;width:100%;transition:all .2s;}
+.checkin-popup-btn:hover{background:var(--accent2);transform:translateY(-1px);}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes bounce{from{transform:scale(1)}to{transform:scale(1.15)}}
+
+/* Approval stages */
+.approval-stages{display:flex;align-items:center;gap:6px;margin-top:6px;}
+.stage-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3);}
+.stage-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);border:1px solid var(--border2);}
+.stage-dot.done{background:var(--green);border-color:var(--green);}
+.stage-dot.active{background:var(--amber);border-color:var(--amber);}
+.stage-dot.rejected{background:var(--red);border-color:var(--red);}
+.stage-arrow{color:var(--text3);font-size:10px;}
+
+/* Settings */
+.settings-user-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+.settings-user-row:last-child{border-bottom:none;}
+.notif-row{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);}
+.notif-row:last-child{border-bottom:none;}
+.notif-label{font-size:12px;font-weight:600;color:var(--text2);min-width:110px;padding-top:9px;}
+.notif-input{flex:1;}
+
+/* Misc */
+.flex{display:flex;} .items-center{align-items:center;} .gap-8{gap:8px;} .gap-12{gap:12px;}
+.ml-auto{margin-left:auto;} .text-sm{font-size:12px;} .text-muted{color:var(--text2);}
+.fw-600{font-weight:600;} .fw-700{font-weight:700;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.toast{position:fixed;bottom:28px;right:28px;background:var(--text);color:#fff;padding:12px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;box-shadow:var(--shadow-lg);}
+.toast.show{transform:translateY(0);opacity:1;}
+@media(max-width:768px){.toast{bottom:90px;right:16px;left:16px;}}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+.tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.filter-tag{padding:5px 14px;border-radius:99px;font-size:12px;font-weight:500;border:1px solid var(--border2);color:var(--text2);cursor:pointer;background:none;transition:all .2s;}
+.filter-tag:hover{background:var(--bg2);color:var(--text);}
+.filter-tag.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.loading-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.loading-spinner{width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+.loading-text{color:var(--text2);font-size:14px;font-weight:500;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CONFIG = {
+  SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbwFHJTrZMXj5skNoDTwF4a7jeyYggpb3uaxHZ3dVsjOuLEutT9PgsVUy3CIcGZZUB5v/exec',
+  CHECKIN_TIME: '09:30',
+  OFFICE_LAT: 25.059912319926653,
+  OFFICE_LNG: 121.51843625365498,
+  GEO_LIMIT: 50, // 公尺
+};
+
+const DEFAULT_NOTIF_MESSAGES = {
+  first:   '🎉 恭喜你是今天第一個到公司的！',
+  second:  '☀️ 早安！你是今天第二個到的',
+  others:  '👋 早安 {name}，今天第 {n} 個到！',
+  ontime:  '👍 {name} 準時上班，讚！',
+  late:    '⏰ {name}，今天晚了一點，加油！',
+  checkout:'🌙 {name} 辛苦了，今天工時 {hours} 小時！',
+};
+
+const LEAVE_TYPES = [
+  { id:'annual',    name:'特休',        quota:0,  unlimited:false, dynamic:true },
+  { id:'sick',      name:'病假',        quota:3,  unlimited:false },
+  { id:'personal',  name:'事假',        quota:3,  unlimited:false },
+  { id:'wedding',   name:'婚假',        quota:0,  unlimited:true },
+  { id:'funeral',   name:'喪假',        quota:0,  unlimited:true },
+  { id:'maternity', name:'產假/陪產假', quota:0,  unlimited:true },
+];
+
+const STATUS_LABEL = {
+  pending:          '待主管審批',
+  manager_approved: '待CEO確認',
+  approved:         '已核准',
+  rejected:         '已拒絕',
+};
+
+const S = {
+  currentUser: null,
+  page: 'clock',
+  employees: [],
+  attendance: [],
+  leaves: [],
+  modal: null,
+  _rejectTarget: null,
+  _recFilter: null,
+  notifMessages: null,
+  appReady: false,
+};
+
+// ── Storage ──
+const LS = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+function loadLocalData() {
+  S.attendance = LS.get('hr_attendance') || [];
+  S.leaves     = LS.get('hr_leaves')     || [];
+  S.employees  = LS.get('hr_employees')  || [];
+  S.notifMessages = LS.get('hr_notif_messages') || { ...DEFAULT_NOTIF_MESSAGES };
+}
+function saveAttendance() { LS.set('hr_attendance', S.attendance); }
+function saveLeaves()     { LS.set('hr_leaves', S.leaves); }
+function saveEmployees()  { LS.set('hr_employees', S.employees); }
+function saveNotifMessages() { LS.set('hr_notif_messages', S.notifMessages); }
+
+// ── API ──
+async function sheetAPI(action, data = {}) {
+  if (!CONFIG.SHEET_API_URL || CONFIG.SHEET_API_URL.startsWith('YOUR')) return null;
+  try {
+    const params = new URLSearchParams({ action, payload: JSON.stringify(data) });
+    const res = await fetch(CONFIG.SHEET_API_URL + '?' + params.toString());
+    return res.json();
+  } catch(e) { console.warn('API error:', e); return null; }
+}
+
+async function loadEmployeesFromSheets() {
+  try {
+    const res = await sheetAPI('getEmployees');
+    if (res && res.ok && res.data && res.data.length > 0) {
+      return res.data.map(e => ({
+        id:       e.email,
+        email:    e.email,
+        name:     e.name || e.email,
+        role:     e.role || 'staff',
+        dept:     e.dept || '',
+        hireDate: e.hireDate || null,
+      }));
+    }
+    return [];
+  } catch(e) { return []; }
+}
+
+// ── 特休計算 ──
+function calcAnnualLeave(hireDate) {
+  if (!hireDate) return null;
+  const hire = new Date(hireDate);
+  if (isNaN(hire.getTime())) return null;
+  const today = new Date();
+  const months = (today.getFullYear()-hire.getFullYear())*12 + (today.getMonth()-hire.getMonth()) + (today.getDate()>=hire.getDate()?0:-1);
+  if (months < 6)   return 0;
+  if (months < 12)  return 3;
+  if (months < 24)  return 7;
+  if (months < 36)  return 10;
+  if (months < 60)  return 14;
+  if (months < 120) return 15;
+  return Math.min(30, 15 + Math.floor(months/12) - 10 + 1);
+}
+
+// ── Utils ──
+function toast(msg, dur=2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+function fmtTime(d) {
+  if (!d) return '-';
+  const dt = new Date(d);
+  return `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+}
+function todayStr() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+}
+function isLate(iso) {
+  const dt = new Date(iso);
+  const [h,m] = CONFIG.CHECKIN_TIME.split(':').map(Number);
+  return dt.getHours() > h || (dt.getHours()===h && dt.getMinutes()>m);
+}
+function getUserLeaveUsed(userId, typeId) {
+  const year = new Date().getFullYear();
+  return S.leaves.filter(l => l.userId===userId && l.type===typeId && l.status==='approved' && new Date(l.startDate).getFullYear()===year).reduce((s,l)=>s+(l.days||1),0);
+}
+
+// ── 兩階段審批邏輯 ──
+function getNextApprover(leave) {
+  const applicant = S.employees.find(e => e.id === leave.userId);
+  if (!applicant) return null;
+  if (leave.status === 'pending') {
+    if (applicant.role === 'ceo' || applicant.role === 'manager') return 'ceo';
+    const hasMgr = S.employees.some(e => e.role==='manager' && e.dept===applicant.dept);
+    return hasMgr ? 'manager' : 'ceo';
+  }
+  if (leave.status === 'manager_approved') return 'ceo';
+  return null;
+}
+function canApproveLeave(leave) {
+  const u = S.currentUser;
+  const next = getNextApprover(leave);
+  if (u.role === 'ceo' && (next === 'ceo')) return true;
+  if (u.role === 'manager' && next === 'manager') {
+    const applicant = S.employees.find(e => e.id === leave.userId);
+    return applicant && applicant.dept === u.dept;
+  }
+  return false;
+}
+function getPendingCount() {
+  if (!S.currentUser || S.currentUser.role === 'staff') return 0;
+  return S.leaves.filter(l => (l.status==='pending'||l.status==='manager_approved') && canApproveLeave(l)).length;
+}
+
+// ── 打卡通知訊息 ──
+function buildCheckinMessage(name, isLateFlag, n) {
+  const msgs = S.notifMessages || DEFAULT_NOTIF_MESSAGES;
+  let tpl = '';
+  if (n === 1)      tpl = msgs.first;
+  else if (n === 2) tpl = msgs.second;
+  else              tpl = msgs.others;
+  if (isLateFlag)   tpl = msgs.late;
+  return tpl.replace(/{name}/g, name).replace(/{n}/g, n);
+}
+function buildCheckoutMessage(name, hours) {
+  const msgs = S.notifMessages || DEFAULT_NOTIF_MESSAGES;
+  return (msgs.checkout || DEFAULT_NOTIF_MESSAGES.checkout).replace(/{name}/g, name).replace(/{hours}/g, hours);
+}
+function getTodayCheckinCount() {
+  const today = todayStr();
+  return S.attendance.filter(a => a.date === today && a.checkIn).length;
+}
+
+// ── 打卡彈窗 ──
+function showCheckinPopup(message, time, isCheckout) {
+  const icon = isCheckout ? '🌙' : '✅';
+  const title = isCheckout ? '下班打卡成功' : '上班打卡成功';
+  const overlay = document.createElement('div');
+  overlay.className = 'checkin-popup-overlay';
+  overlay.innerHTML = `
+    <div class="checkin-popup">
+      <div class="checkin-popup-icon">${icon}</div>
+      <div class="checkin-popup-title">${title}</div>
+      <div class="checkin-popup-msg">${message}</div>
+      <div class="checkin-popup-time">${time}</div>
+      <button class="checkin-popup-btn" onclick="this.closest('.checkin-popup-overlay').remove()">確認</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+  setTimeout(() => overlay.remove(), 8000);
+}
+
+// ── Render ──
+function render() {
+  const app = document.getElementById('app');
+  if (!S.appReady) {
+    app.innerHTML = `<div class="loading-screen"><div class="loading-spinner"></div><div class="loading-text">載入中…</div></div>`;
+    return;
+  }
+  if (!S.currentUser) { app.innerHTML = renderLogin(); return; }
+  app.innerHTML = `
+    <div class="layout"><div class="main">${renderPage()}</div></div>
+    ${S.modal ? renderModal() : ''}`;
+  bindEvents();
+  startClock();
+}
+
+function renderLogin() {
+  return `
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">⏱</div>
+      <div class="login-brand">Lumark HR</div>
+      <div class="login-sub">請使用公司 Email 帳號登入</div>
+      <div id="login-error" class="login-error"></div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" id="login-email" placeholder="your@lumarkbd.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">密碼</label>
+        <input type="password" class="form-control" id="login-pass" placeholder="請輸入密碼" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="login-btn-wrap">
+        <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;padding:12px;font-size:15px;" onclick="doLogin()">登入</button>
+        <div class="login-spinner" id="login-spinner"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderTopbar(pages, pending) {
+  const u = S.currentUser;
+  const roleLabel = {ceo:'執行長',manager:'主管',staff:'員工'}[u.role]||u.role;
+  const roleClass = {ceo:'role-ceo',manager:'role-manager',staff:'role-staff'}[u.role]||'role-staff';
+  return `
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="topbar-brand">⏱ Lumark HR</div>
+      <nav class="topbar-nav">
+        ${pages.map(p=>`<div class="nav-item ${S.page===p.id?'active':''}" onclick="navigate('${p.id}')">
+          <span class="nav-icon">${p.icon}</span>${p.label}
+          ${p.badge?`<span class="nav-badge">${p.badge}</span>`:''}
+        </div>`).join('')}
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="user-chip">
+        <div class="user-avatar">${u.name[0].toUpperCase()}</div>
+        <span class="user-name">${u.name}</span>
+        <span class="user-role-badge ${roleClass}">${roleLabel}</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">登出</button>
+    </div>
+  </div>`;
+}
+
+function renderPage() {
+  return ({clock:renderClock,leave:renderLeave,records:renderRecords,approve:renderApprove,settings:renderSettings}[S.page]||renderClock)();
+}
+
+// ── 統一頁首（Logo + 導覽 + 使用者） ──
+function renderPageHeader() {
+  const u = S.currentUser;
+  const pending = getPendingCount();
+  const roleLabel = {ceo:'執行長',manager:'主管',staff:'員工'}[u.role]||u.role;
+  const roleClass = {ceo:'role-ceo',manager:'role-manager',staff:'role-staff'}[u.role]||'role-staff';
+  const pages = [
+    { id:'clock',   icon:'🕐', label:'打卡' },
+    { id:'leave',   icon:'📋', label:'請假' },
+    { id:'records', icon:'📊', label:'記錄' },
+  ];
+  if (u.role !== 'staff') pages.push({ id:'approve', icon:'✅', label:'審批', badge: pending });
+  if (u.role === 'ceo')   pages.push({ id:'settings', icon:'⚙️', label:'設定' });
+  return `
+  <div class="page-header">
+    <div class="page-header-brand">⏱ Lumark HR</div>
+    <nav class="page-header-nav">
+      ${pages.map(p=>`<div class="clock-nav-item ${S.page===p.id?'active':''}" onclick="navigate('${p.id}')">
+        <span>${p.icon}</span>${p.label}
+        ${p.badge?`<span class="nav-badge">${p.badge}</span>`:''}
+      </div>`).join('')}
+    </nav>
+    <div class="page-header-user">
+      <div class="user-avatar" style="width:26px;height:26px;font-size:11px">${u.name[0].toUpperCase()}</div>
+      <span class="user-name" style="font-size:13px;color:var(--text)">${u.name}</span>
+      <span class="user-role-badge ${roleClass}">${roleLabel}</span>
+      <button class="btn-logout" onclick="doLogout()">登出</button>
+    </div>
+  </div>`;
+}
+
+// ── Clock ──
+function renderClock() {
+  const u = S.currentUser;
+  const today = todayStr();
+  const rec = S.attendance.find(a => a.userId===u.id && a.date===today);
+  const clockedIn  = rec && rec.checkIn;
+  const clockedOut = rec && rec.checkOut;
+  let statusHtml = '';
+  if (clockedOut) statusHtml = `<div class="clock-status clocked-out">今日已下班 ${fmtTime(rec.checkOut)}</div>`;
+  else if (clockedIn) statusHtml = `<div class="clock-status clocked-in">上班中 · ${fmtTime(rec.checkIn)}${isLate(rec.checkIn)?' · ⚠️ 遲到':''}</div>`;
+  const recent = S.attendance.filter(a=>a.userId===u.id).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,7);
+
+  return `
+  <div class="card page-card">
+    ${renderPageHeader()}
+    <div class="clock-display">
+      <div class="clock-time" id="live-clock">--:--:--</div>
+      <div class="clock-date" id="live-date"></div>
+      <div class="clock-btns">
+        <button class="clock-btn clock-btn-in" onclick="doCheckIn()" ${clockedIn?'disabled':''}>上班打卡</button>
+        <button class="clock-btn clock-btn-out" onclick="doCheckOut()" ${!clockedIn||clockedOut?'disabled':''}>下班打卡</button>
+      </div>
+      ${statusHtml}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">本週紀錄</div>
+    ${recent.length?`<div class="table-wrap"><table>
+      <thead><tr><th>日期</th><th>上班</th><th>下班</th><th>工時</th><th>狀態</th></tr></thead>
+      <tbody>${recent.map(r=>{
+        const hrs=r.checkIn&&r.checkOut?((new Date(r.checkOut)-new Date(r.checkIn))/3600000).toFixed(1):'-';
+        return `<tr><td>${r.date}</td><td>${fmtTime(r.checkIn)}</td><td>${fmtTime(r.checkOut)}</td>
+          <td>${hrs!=='-'?hrs+'h':'-'}</td>
+          <td>${r.checkIn&&isLate(r.checkIn)?'<span class="badge badge-late">遲到</span>':'<span class="badge badge-on-time">正常</span>'}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>`:'<div class="empty-state">尚無打卡記錄</div>'}
+  </div>`;
+}
+
+// ── Leave ──
+function renderLeave() {
+  const u = S.currentUser;
+  const myLeaves = S.leaves.filter(l=>l.userId===u.id).sort((a,b)=>new Date(b.applyDate)-new Date(a.applyDate));
+  return `
+  <div class="card page-card" style="margin-bottom:20px">
+    ${renderPageHeader()}
+  </div>
+  <div class="page-content-title">請假申請</div>
+  <div class="card">
+    <div class="card-title">假別餘額</div>
+    <div class="quota-grid">
+      ${LEAVE_TYPES.map(lt=>{
+        const used = getUserLeaveUsed(u.id, lt.id);
+        const quota = lt.dynamic ? calcAnnualLeave(u.hireDate) : lt.quota;
+        const rem = lt.unlimited ? null : quota === null ? null : quota - used;
+        const pct = lt.unlimited||quota===null ? 0 : Math.min(100,(used/quota)*100);
+        return `<div class="quota-card">
+          <div class="quota-name">${lt.name}</div>
+          ${lt.unlimited
+            ? `<div class="quota-nums">無限制</div><div class="quota-unlimited">不限配額</div>`
+            : quota===null
+              ? `<div class="quota-nums" style="font-size:14px">待設定</div><div class="quota-unlimited">請填到職日</div>`
+              : `<div class="quota-nums">${rem} <span>/ ${quota} 天</span></div>
+                 <div class="progress-bar"><div class="progress-fill ${pct>80?'danger':pct>60?'warn':''}" style="width:${pct}%"></div></div>`}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+      我的請假記錄
+      <button class="btn btn-primary btn-sm" onclick="openLeaveModal()">＋ 新增申請</button>
+    </div>
+    ${myLeaves.length?`<div class="table-wrap"><table>
+      <thead><tr><th>假別</th><th>日期</th><th>天數</th><th>狀態</th></tr></thead>
+      <tbody>${myLeaves.map(l=>{
+        const lt=LEAVE_TYPES.find(x=>x.id===l.type);
+        const dateStr=l.startDate===l.endDate?l.startDate:`${l.startDate}~${l.endDate}`;
+        const applicant=S.employees.find(e=>e.id===l.userId);
+        const needsMgr=applicant&&applicant.role==='staff'&&S.employees.some(e=>e.role==='manager'&&e.dept===applicant.dept);
+        const s1=l.status==='rejected'&&!l.ceoRejected?'rejected':l.status==='pending'?'active':'done';
+        const s2=l.status==='approved'?'done':l.status==='manager_approved'?'active':l.status==='rejected'&&l.ceoRejected?'rejected':'';
+        return `<tr>
+          <td>${lt?.name||l.type}</td><td>${dateStr}</td><td>${l.days}</td>
+          <td>
+            <span class="badge badge-${l.status}">${STATUS_LABEL[l.status]||l.status}</span>
+            ${needsMgr?`<div class="approval-stages">
+              <div class="stage-item"><div class="stage-dot ${s1}"></div><span>主管</span></div>
+              <span class="stage-arrow">›</span>
+              <div class="stage-item"><div class="stage-dot ${s2}"></div><span>CEO</span></div>
+            </div>`:''}
+            ${l.status==='rejected'&&l.rejectReason?`<div class="text-sm text-muted" style="margin-top:3px">原因：${l.rejectReason}</div>`:''}
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`:'<div class="empty-state">尚無請假記錄</div>'}
+  </div>`;
+}
+
+// ── Records ──
+function renderRecords() {
+  const u = S.currentUser;
+  const visibleEmps = u.role==='ceo'?S.employees:u.role==='manager'?S.employees.filter(e=>e.dept===u.dept):[u];
+  const filterEmp = S._recFilter || visibleEmps[0]?.id;
+  const recs = S.attendance.filter(a=>a.userId===filterEmp).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  return `
+  <div class="card page-card" style="margin-bottom:20px">
+    ${renderPageHeader()}
+  </div>
+  <div class="page-content-title">出勤記錄</div>
+  ${visibleEmps.length>1?`<div class="tag-row">${visibleEmps.map(e=>`
+    <button class="filter-tag ${filterEmp===e.id?'active':''}" onclick="setRecFilter('${e.id}')">${e.name}</button>`).join('')}</div>`:''}
+  <div class="card">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+      ${S.employees.find(e=>e.id===filterEmp)?.name||''} 的出勤記錄
+      <button class="btn btn-outline btn-sm" onclick="exportCSV('${filterEmp}')">匯出 CSV</button>
+    </div>
+    ${recs.length?`<div class="table-wrap"><table>
+      <thead><tr><th>日期</th><th>上班</th><th>下班</th><th>工時</th><th>狀態</th></tr></thead>
+      <tbody>${recs.map(r=>{
+        const hrs=r.checkIn&&r.checkOut?((new Date(r.checkOut)-new Date(r.checkIn))/3600000).toFixed(1):'-';
+        return `<tr><td>${r.date}</td><td>${fmtTime(r.checkIn)}</td><td>${fmtTime(r.checkOut)}</td>
+          <td>${hrs!=='-'?hrs+'h':'-'}</td>
+          <td>${r.checkIn&&isLate(r.checkIn)?'<span class="badge badge-late">遲到</span>':'<span class="badge badge-on-time">正常</span>'}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>`:'<div class="empty-state">尚無出勤記錄</div>'}
+  </div>`;
+}
+
+// ── Approve ──
+function renderApprove() {
+  const approvable = S.leaves.filter(l=>(l.status==='pending'||l.status==='manager_approved')&&canApproveLeave(l));
+  return `
+  <div class="card page-card" style="margin-bottom:20px">
+    ${renderPageHeader()}
+  </div>
+  <div class="page-content-title">審批管理</div>
+  <div class="card">
+    <div class="card-title">待我審批（${approvable.length}）</div>
+    ${approvable.length?`<div class="table-wrap"><table>
+      <thead><tr><th>申請人</th><th>假別</th><th>日期</th><th>天數</th><th>原因</th><th>階段</th><th>操作</th></tr></thead>
+      <tbody>${approvable.map(l=>{
+        const emp=S.employees.find(e=>e.id===l.userId);
+        const lt=LEAVE_TYPES.find(x=>x.id===l.type);
+        return `<tr>
+          <td><span class="fw-700">${emp?.name||l.userId}</span><br><span class="text-sm text-muted">${emp?.dept||''}</span></td>
+          <td>${lt?.name||l.type}</td>
+          <td>${l.startDate}${l.endDate!==l.startDate?' ~ '+l.endDate:''}</td>
+          <td>${l.days}天</td>
+          <td class="text-muted">${l.reason||'-'}</td>
+          <td><span class="badge badge-${l.status}">${l.status==='pending'?'主管審批':'CEO確認'}</span></td>
+          <td><div class="flex gap-8">
+            <button class="btn btn-success btn-sm" onclick="approveLeave('${l.id}')">核准</button>
+            <button class="btn btn-outline btn-sm" onclick="openRejectModal('${l.id}')">拒絕</button>
+          </div></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`:'<div class="empty-state">目前沒有待審批的申請 ✓</div>'}
+  </div>`;
+}
+
+// ── Settings ──
+function renderSettings() {
+  const msgs = S.notifMessages || DEFAULT_NOTIF_MESSAGES;
+  const notifFields = [
+    { key:'first',    label:'第 1 位打卡' },
+    { key:'second',   label:'第 2 位打卡' },
+    { key:'others',   label:'第 3 位以後' },
+    { key:'ontime',   label:'準時打卡' },
+    { key:'late',     label:'遲到打卡' },
+    { key:'checkout', label:'下班打卡' },
+  ];
+  return `
+  <div class="card page-card" style="margin-bottom:20px">
+    ${renderPageHeader()}
+  </div>
+  <div class="page-content-title">設定</div>
+  <div class="card">
+    <div class="card-title">🔔 打卡通知訊息</div>
+    <p class="text-muted" style="font-size:12px;margin-bottom:16px">可使用 {name}（姓名）、{n}（第幾位）、{hours}（工時）變數</p>
+    ${notifFields.map(f=>`
+    <div class="notif-row">
+      <div class="notif-label">${f.label}</div>
+      <div class="notif-input">
+        <input type="text" class="form-control" id="notif-${f.key}" value="${msgs[f.key]||''}">
+      </div>
+    </div>`).join('')}
+    <div style="margin-top:16px;display:flex;gap:8px;">
+      <button class="btn btn-primary btn-sm" onclick="saveNotifSettings()">儲存訊息設定</button>
+      <button class="btn btn-outline btn-sm" onclick="resetNotifSettings()">恢復預設</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">👥 員工清單</div>
+    <p class="text-muted" style="font-size:12px;margin-bottom:12px">員工資料由 Google Sheets Employees 分頁管理，修改後按重新載入。</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>姓名</th><th>Email</th><th>角色</th><th>部門</th></tr></thead>
+      <tbody>${S.employees.map(e=>`<tr>
+        <td class="fw-700">${e.name}</td>
+        <td class="text-muted">${e.email||e.id}</td>
+        <td><span class="badge badge-${e.role==='ceo'?'approved':e.role==='manager'?'manager_approved':'pending'}">${{ceo:'執行長',manager:'主管',staff:'員工'}[e.role]||e.role}</span></td>
+        <td>${e.dept}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    <div style="margin-top:12px">
+      <button class="btn btn-outline btn-sm" onclick="refreshEmployees()">↻ 重新載入員工</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚙️ 系統設定</div>
+    <div class="form-group">
+      <label class="form-label">遲到判定時間</label>
+      <input type="time" class="form-control" style="width:160px" value="${CONFIG.CHECKIN_TIME}" onchange="CONFIG.CHECKIN_TIME=this.value">
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="testConnection()">測試 Sheets 連線</button>
+  </div>`;
+}
+
+// ── Modal ──
+function renderModal() {
+  if (S.modal==='leave') return `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title">新增請假申請</div>
+        <div class="form-group"><label class="form-label">假別</label>
+          <select class="form-control" id="m-type">${LEAVE_TYPES.map(lt=>`<option value="${lt.id}">${lt.name}</option>`).join('')}</select></div>
+        <div class="grid-2">
+          <div class="form-group"><label class="form-label">開始日期</label><input type="date" class="form-control" id="m-start" value="${todayStr()}"></div>
+          <div class="form-group"><label class="form-label">結束日期</label><input type="date" class="form-control" id="m-end" value="${todayStr()}"></div>
+        </div>
+        <div class="form-group"><label class="form-label">請假原因</label><textarea class="form-control" id="m-reason" placeholder="請簡述原因（可選）"></textarea></div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal()">取消</button>
+          <button class="btn btn-primary" onclick="submitLeave()">送出申請</button>
+        </div>
+      </div>
+    </div>`;
+  if (S.modal==='reject') return `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title">拒絕請假</div>
+        <div class="form-group"><label class="form-label">拒絕原因</label>
+          <textarea class="form-control" id="m-reject-reason" placeholder="請填寫原因"></textarea></div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal()">取消</button>
+          <button class="btn btn-danger" onclick="confirmReject()">確認拒絕</button>
+        </div>
+      </div>
+    </div>`;
+  return '';
+}
+
+function showGeoError(dist) {
+  const overlay = document.createElement('div');
+  overlay.className = 'checkin-popup-overlay';
+  overlay.innerHTML = `
+    <div class="checkin-popup">
+      <div class="checkin-popup-icon">📍</div>
+      <div class="checkin-popup-title">距離太遠</div>
+      <div class="checkin-popup-msg">你目前距離公司 <strong>${dist} 公尺</strong>，<br>需在 ${CONFIG.GEO_LIMIT} 公尺內才能打卡。</div>
+      <div class="checkin-popup-time">請確認你已到達公司</div>
+      <button class="checkin-popup-btn" onclick="this.closest('.checkin-popup-overlay').remove()">我知道了</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+}
+
+// ── Actions ──
+async function doLogin() {
+  const email = document.getElementById('login-email')?.value?.trim();
+  const pass  = document.getElementById('login-pass')?.value;
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+  const spinner = document.getElementById('login-spinner');
+  if (!email||!pass) { if(errEl){errEl.textContent='請填寫 Email 和密碼';errEl.style.display='block';} return; }
+  if (errEl) errEl.style.display='none';
+  if (btn) { btn.disabled=true; btn.textContent='登入中…'; }
+  if (spinner) spinner.style.display='block';
+  try {
+    const cred = await window._fbSignIn(window._fbAuth, email, pass);
+    let emp = S.employees.find(e => e.email===cred.user.email);
+    if (!emp) {
+      const fresh = await loadEmployeesFromSheets();
+      if (fresh.length>0) { S.employees=fresh; saveEmployees(); }
+      emp = S.employees.find(e => e.email===cred.user.email);
+    }
+    if (!emp) {
+      toast('此帳號不在員工名單中，請聯絡管理員');
+      await window._fbSignOut(window._fbAuth);
+      if (btn) { btn.disabled=false; btn.textContent='登入'; }
+      if (spinner) spinner.style.display='none';
+      return;
+    }
+    S.currentUser = emp;
+    S.page = 'clock';
+    render();
+  } catch(e) {
+    const msg = e.code==='auth/invalid-credential'||e.code==='auth/wrong-password' ? 'Email 或密碼錯誤'
+      : e.code==='auth/user-not-found' ? '找不到此帳號'
+      : e.code==='auth/too-many-requests' ? '登入嘗試次數過多，請稍後再試'
+      : `登入失敗：${e.message}`;
+    if (errEl) { errEl.textContent=msg; errEl.style.display='block'; }
+    if (btn) { btn.disabled=false; btn.textContent='登入'; }
+    if (spinner) spinner.style.display='none';
+  }
+}
+
+async function doLogout() {
+  try { await window._fbSignOut(window._fbAuth); } catch(e) {}
+  S.currentUser = null;
+  S.page = 'clock';
+  render();
+}
+
+function navigate(page) { S.page=page; render(); }
+function setRecFilter(id) { S._recFilter=id; render(); }
+function openLeaveModal() { S.modal='leave'; render(); }
+function openRejectModal(id) { S._rejectTarget=id; S.modal='reject'; render(); }
+function closeModal() { S.modal=null; render(); }
+
+// ── 地理位置驗證 ──
+function calcDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000; // 地球半徑（公尺）
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function checkLocation() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('此裝置不支援定位功能'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const dist = calcDistance(
+          pos.coords.latitude, pos.coords.longitude,
+          CONFIG.OFFICE_LAT, CONFIG.OFFICE_LNG
+        );
+        resolve({ dist: Math.round(dist), lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      err => {
+        const msg = err.code === 1 ? '請允許定位權限才能打卡'
+          : err.code === 2 ? '無法取得位置，請確認 GPS 已開啟'
+          : '定位逾時，請重試';
+        reject(new Error(msg));
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+}
+
+async function doCheckIn() {
+  const u = S.currentUser;
+  // 先驗證位置
+  toast('正在確認位置…');
+  try {
+    const geo = await checkLocation();
+    if (geo.dist > CONFIG.GEO_LIMIT) {
+      showGeoError(geo.dist);
+      return;
+    }
+  } catch(e) {
+    toast(e.message);
+    return;
+  }
+  const now = new Date();
+  const today = todayStr();
+  const late = isLate(now.toISOString());
+  const rec = { id:Date.now().toString(), userId:u.id, date:today, checkIn:now.toISOString(), checkOut:null };
+  S.attendance.push(rec);
+  saveAttendance();
+  const n = getTodayCheckinCount();
+  const msg = buildCheckinMessage(u.name, late, n);
+  const timeStr = `打卡時間：${fmtTime(now.toISOString())}${late?' · ⚠️ 遲到':''}`;
+  showCheckinPopup(msg, timeStr, false);
+  await sheetAPI('addAttendance', { ...rec, name:u.name, dept:u.dept, late });
+  render();
+}
+
+async function doCheckOut() {
+  const u = S.currentUser;
+  // 先驗證位置
+  toast('正在確認位置…');
+  try {
+    const geo = await checkLocation();
+    if (geo.dist > CONFIG.GEO_LIMIT) {
+      showGeoError(geo.dist);
+      return;
+    }
+  } catch(e) {
+    toast(e.message);
+    return;
+  }
+  const today = todayStr();
+  const now = new Date();
+  const idx = S.attendance.findIndex(a=>a.userId===u.id&&a.date===today&&!a.checkOut);
+  if (idx===-1) { toast('找不到今日打卡記錄'); return; }
+  S.attendance[idx].checkOut = now.toISOString();
+  saveAttendance();
+  const hrs = ((now-new Date(S.attendance[idx].checkIn))/3600000).toFixed(1);
+  const msg = buildCheckoutMessage(u.name, hrs);
+  const timeStr = `下班時間：${fmtTime(now.toISOString())}`;
+  showCheckinPopup(msg, timeStr, true);
+  await sheetAPI('updateCheckout', { id:S.attendance[idx].id, checkOut:now.toISOString(), hours:hrs });
+  render();
+}
+
+async function submitLeave() {
+  const u = S.currentUser;
+  const type=document.getElementById('m-type').value;
+  const start=document.getElementById('m-start').value;
+  const end=document.getElementById('m-end').value;
+  const reason=document.getElementById('m-reason').value;
+  if (!start||!end) { toast('請填寫日期'); return; }
+  const days=Math.round((new Date(end)-new Date(start))/86400000)+1;
+  const lt=LEAVE_TYPES.find(x=>x.id===type);
+  if (!lt.unlimited) {
+    const quota=lt.dynamic?calcAnnualLeave(u.hireDate):lt.quota;
+    if (lt.dynamic&&quota===null) { toast('尚未設定到職日，請聯絡管理員'); return; }
+    const used=getUserLeaveUsed(u.id,type);
+    if (used+days>quota) { toast(`${lt.name}額度不足（剩餘 ${quota-used} 天）`); return; }
+  }
+  const leave={ id:Date.now().toString(), userId:u.id, type, startDate:start, endDate:end, days, reason, status:'pending', applyDate:new Date().toISOString() };
+  S.leaves.push(leave);
+  saveLeaves();
+  toast('申請已送出，等待審批');
+  await sheetAPI('addLeave', { ...leave, name:u.name, dept:u.dept, typeName:lt.name });
+  closeModal();
+}
+
+async function approveLeave(leaveId) {
+  const u = S.currentUser;
+  const idx = S.leaves.findIndex(l=>l.id===leaveId);
+  if (idx===-1) return;
+  const leave = S.leaves[idx];
+  const next = getNextApprover(leave);
+  if (u.role==='manager' && next==='manager') {
+    S.leaves[idx].status='manager_approved';
+    S.leaves[idx].managerName=u.name;
+    toast('已核准，等待 CEO 最終確認');
+    await sheetAPI('updateLeaveStatus', { id:leaveId, status:'manager_approved', approvedBy:u.name });
+  } else if (u.role==='ceo' && next==='ceo') {
+    S.leaves[idx].status='approved';
+    S.leaves[idx].ceoName=u.name;
+    toast('已最終核准');
+    await sheetAPI('updateLeaveStatus', { id:leaveId, status:'approved', approvedBy:u.name });
+  }
+  saveLeaves();
+  render();
+}
+
+async function confirmReject() {
+  const u = S.currentUser;
+  const reason=document.getElementById('m-reject-reason').value;
+  const leaveId=S._rejectTarget;
+  const idx=S.leaves.findIndex(l=>l.id===leaveId);
+  if (idx===-1) return;
+  S.leaves[idx].status='rejected';
+  S.leaves[idx].rejectReason=reason;
+  S.leaves[idx].rejectedBy=u.name;
+  if (u.role==='ceo') S.leaves[idx].ceoRejected=true;
+  saveLeaves();
+  toast('已拒絕');
+  await sheetAPI('updateLeaveStatus', { id:leaveId, status:'rejected', rejectReason:reason, rejectedBy:u.name });
+  closeModal();
+}
+
+function saveNotifSettings() {
+  const keys=['first','second','others','ontime','late','checkout'];
+  keys.forEach(k=>{
+    const el=document.getElementById(`notif-${k}`);
+    if (el) S.notifMessages[k]=el.value;
+  });
+  saveNotifMessages();
+  toast('通知訊息已儲存');
+}
+
+function resetNotifSettings() {
+  S.notifMessages = { ...DEFAULT_NOTIF_MESSAGES };
+  saveNotifMessages();
+  toast('已恢復預設訊息');
+  render();
+}
+
+async function refreshEmployees() {
+  toast('重新載入中…');
+  const fresh=await loadEmployeesFromSheets();
+  if (fresh.length>0) { S.employees=fresh; saveEmployees(); toast(`已載入 ${fresh.length} 位員工`); render(); }
+  else toast('載入失敗，請確認 Sheets 連線');
+}
+
+async function testConnection() {
+  toast('測試中…');
+  const res=await sheetAPI('test');
+  toast(res?.ok?'✓ 連線成功':'✗ 連線失敗');
+}
+
+function exportCSV(empId) {
+  const emp=S.employees.find(e=>e.id===empId);
+  const recs=S.attendance.filter(a=>a.userId===empId).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const rows=[['日期','上班時間','下班時間','工時','狀態']];
+  recs.forEach(r=>{
+    const hrs=r.checkIn&&r.checkOut?((new Date(r.checkOut)-new Date(r.checkIn))/3600000).toFixed(1):'';
+    rows.push([r.date,fmtTime(r.checkIn),fmtTime(r.checkOut),hrs,r.checkIn&&isLate(r.checkIn)?'遲到':'正常']);
+  });
+  const blob=new Blob(['\uFEFF'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`${emp?.name}_出勤記錄.csv`;
+  a.click();
+}
+
+// ── Clock ticker ──
+let clockInterval=null;
+function startClock() {
+  if (clockInterval) clearInterval(clockInterval);
+  const tick=()=>{
+    const el=document.getElementById('live-clock');
+    const dt=document.getElementById('live-date');
+    if (!el) { clearInterval(clockInterval); return; }
+    const now=new Date();
+    el.textContent=now.toLocaleTimeString('zh-TW',{hour12:false});
+    if (dt) dt.textContent=now.toLocaleDateString('zh-TW',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  };
+  tick();
+  clockInterval=setInterval(tick,1000);
+}
+
+function bindEvents() {
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape'&&S.modal) closeModal(); },{once:true});
+}
+
+// ── Init ──
+async function initApp() {
+  loadLocalData();
+  render();
+  const fresh=await loadEmployeesFromSheets();
+  if (fresh.length>0) { S.employees=fresh; saveEmployees(); }
+  S.appReady=true;
+  window._fbOnAuth(window._fbAuth, async firebaseUser=>{
+    if (firebaseUser) {
+      let emp=S.employees.find(e=>e.email===firebaseUser.email);
+      if (!emp) {
+        const f=await loadEmployeesFromSheets();
+        if (f.length>0) { S.employees=f; saveEmployees(); }
+        emp=S.employees.find(e=>e.email===firebaseUser.email);
+      }
+      if (emp) { S.currentUser=emp; S.page=S.page||'clock'; }
+      else {
+        S.currentUser=null;
+        toast('此帳號不在員工名單中，請聯絡管理員');
+        await window._fbSignOut(window._fbAuth);
+      }
+    } else { S.currentUser=null; }
+    render();
+  });
+}
+
+window.addEventListener('firebaseReady', initApp, {once:true});
+if (window._fbAuth) initApp();
+</script>
+</body>
+</html>
