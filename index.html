@@ -275,7 +275,7 @@ tr:hover td{background:var(--surface2);}
 <script>
 const CONFIG = {
   SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbwFHJTrZMXj5skNoDTwF4a7jeyYggpb3uaxHZ3dVsjOuLEutT9PgsVUy3CIcGZZUB5v/exec',
-  CHECKIN_TIME: '10:00',
+  CHECKIN_TIME: '09:30',
   OFFICE_LAT: 25.059892486653364,
   OFFICE_LNG: 121.51849080928085,
   GEO_LIMIT: 50, // 公尺
@@ -415,7 +415,11 @@ function isLate(iso) {
 }
 function getUserLeaveUsed(userId, typeId) {
   const year = new Date().getFullYear();
-  return S.leaves.filter(l => l.userId===userId && l.type===typeId && l.status==='approved' && new Date(l.startDate).getFullYear()===year).reduce((s,l)=>s+(l.days||1),0);
+  // 回傳天數（hours/8），方便跟 quota 比較
+  return S.leaves.filter(l =>
+    l.userId===userId && l.type===typeId && l.status==='approved' &&
+    new Date(l.startDate).getFullYear()===year
+  ).reduce((s,l) => s + (l.hours ? l.hours/8 : (l.days||1)), 0);
 }
 
 // ── 兩階段審批邏輯 ──
@@ -744,7 +748,7 @@ function renderApprove() {
           <td><span class="fw-700">${emp?.name||l.userId}</span><br><span class="text-sm text-muted">${emp?.dept||''}</span></td>
           <td>${lt?.name||l.type}</td>
           <td>${l.startDate}${l.endDate!==l.startDate?' ~ '+l.endDate:''}</td>
-          <td>${l.days}天</td>
+          <td>${l.hours ? l.hours + ' 小時' : (l.days ? l.days*8 + ' 小時' : '-')}</td>
           <td class="text-muted">${l.reason||'-'}</td>
           <td><span class="badge badge-${l.status}">${l.status==='pending'?'主管審批':'CEO確認'}</span></td>
           <td><div class="flex gap-8">
@@ -827,12 +831,23 @@ function renderModal() {
       <div class="modal">
         <div class="modal-title">新增請假申請</div>
         <div class="form-group"><label class="form-label">假別</label>
-          <select class="form-control" id="m-type">${LEAVE_TYPES.map(lt=>`<option value="${lt.id}">${lt.name}</option>`).join('')}</select></div>
-        <div class="grid-2">
-          <div class="form-group"><label class="form-label">開始日期</label><input type="date" class="form-control" id="m-start" value="${todayStr()}"></div>
-          <div class="form-group"><label class="form-label">結束日期</label><input type="date" class="form-control" id="m-end" value="${todayStr()}"></div>
+          <select class="form-control" id="m-type" onchange="updateLeaveModalUI()">${LEAVE_TYPES.map(lt=>`<option value="${lt.id}">${lt.name}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">請假日期</label>
+          <input type="date" class="form-control" id="m-start" value="${todayStr()}"></div>
+        <div class="form-group"><label class="form-label">請假時數（以 0.5 小時為單位）</label>
+          <select class="form-control" id="m-hours">
+            ${[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8].map(h=>`<option value="${h}">${h} 小時</option>`).join('')}
+          </select>
         </div>
-        <div class="form-group"><label class="form-label">請假原因</label><textarea class="form-control" id="m-reason" placeholder="請簡述原因（可選）"></textarea></div>
+        <div class="form-group"><label class="form-label">請假原因</label>
+          <textarea class="form-control" id="m-reason" placeholder="請簡述原因（可選）"></textarea></div>
+        <div id="m-receipt-section" style="display:none">
+          <div class="form-group">
+            <label class="form-label">病假收據（可申請後 7 天內補傳）</label>
+            <input type="file" class="form-control" id="m-receipt" accept="image/*" style="padding:6px">
+            <div style="font-size:11px;color:var(--text2);margin-top:4px;letter-spacing:.05em">支援 JPG、PNG，限 5MB</div>
+          </div>
+        </div>
         <div class="modal-footer">
           <button class="btn btn-outline" onclick="closeModal()">取消</button>
           <button class="btn btn-primary" onclick="submitLeave()">送出申請</button>
@@ -1048,27 +1063,91 @@ async function doCheckOut() {
   render();
 }
 
+function updateLeaveModalUI() {
+  const type = document.getElementById('m-type')?.value;
+  const section = document.getElementById('m-receipt-section');
+  if (section) section.style.display = type === 'sick' ? 'block' : 'none';
+}
+
 async function submitLeave() {
   const u = S.currentUser;
-  const type=document.getElementById('m-type').value;
-  const start=document.getElementById('m-start').value;
-  const end=document.getElementById('m-end').value;
-  const reason=document.getElementById('m-reason').value;
-  if (!start||!end) { toast('請填寫日期'); return; }
-  const days=Math.round((new Date(end)-new Date(start))/86400000)+1;
-  const lt=LEAVE_TYPES.find(x=>x.id===type);
+  const type   = document.getElementById('m-type').value;
+  const start  = document.getElementById('m-start').value;
+  const hours  = parseFloat(document.getElementById('m-hours').value);
+  const reason = document.getElementById('m-reason').value;
+  if (!start) { toast('請填寫日期'); return; }
+  if (!hours || hours <= 0) { toast('請選擇請假時數'); return; }
+  const lt = LEAVE_TYPES.find(x => x.id === type);
   if (!lt.unlimited) {
-    const quota=lt.dynamic?calcAnnualLeave(u.hireDate):lt.quota;
-    if (lt.dynamic&&quota===null) { toast('尚未設定到職日，請聯絡管理員'); return; }
-    const used=getUserLeaveUsed(u.id,type);
-    if (used+days>quota) { toast(`${lt.name}額度不足（剩餘 ${quota-used} 天）`); return; }
+    const quota = lt.dynamic ? calcAnnualLeave(u.hireDate) : lt.quota;
+    if (lt.dynamic && quota === null) { toast('尚未設定到職日，請聯絡管理員'); return; }
+    const used = getUserLeaveUsed(u.id, type);
+    // 換算：1天=8小時
+    const usedHours = used * 8;
+    const quotaHours = quota * 8;
+    if (usedHours + hours > quotaHours) {
+      toast(`${lt.name}額度不足（剩餘 ${quotaHours - usedHours} 小時）`);
+      return;
+    }
   }
-  const leave={ id:Date.now().toString(), userId:u.id, type, startDate:start, endDate:end, days, reason, status:'pending', applyDate:new Date().toISOString() };
+  const leaveId = Date.now().toString();
+  const leave = {
+    id: leaveId, userId: u.id, type,
+    startDate: start, endDate: start,
+    hours, days: hours / 8,
+    reason, status: 'pending',
+    applyDate: new Date().toISOString(),
+  };
   S.leaves.push(leave);
   saveLeaves();
   toast('申請已送出，等待審批');
-  await sheetAPI('addLeave', { ...leave, name:u.name, dept:u.dept, typeName:lt.name });
+  await sheetAPI('addLeave', { ...leave, name: u.name, dept: u.dept, typeName: lt.name });
+
+  // 病假收據上傳（選填）
+  if (type === 'sick') {
+    const fileEl = document.getElementById('m-receipt');
+    if (fileEl && fileEl.files && fileEl.files[0]) {
+      await uploadReceipt(leaveId, fileEl.files[0], u.name, start);
+    }
+  }
   closeModal();
+}
+
+async function handleReceiptUpload(leaveId, date, input) {
+  const u = S.currentUser;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  await uploadReceipt(leaveId, file, u.name, date);
+  render();
+}
+
+async function uploadReceipt(leaveId, file, employeeName, date) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('檔案超過 5MB，請壓縮後再試'); return; }
+  toast('上傳收據中…');
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const res = await sheetAPI('uploadReceipt', {
+      leaveId, base64,
+      mimeType: file.type,
+      employeeName, date,
+    });
+    if (res && res.ok) {
+      // 更新本地記錄
+      const idx = S.leaves.findIndex(l => l.id === leaveId);
+      if (idx !== -1) { S.leaves[idx].receiptUrl = res.url; saveLeaves(); }
+      toast('收據上傳成功 ✓');
+    } else {
+      toast('收據上傳失敗，可稍後在記錄頁補傳');
+    }
+  } catch(e) {
+    toast('上傳失敗：' + e.message);
+  }
 }
 
 async function approveLeave(leaveId) {
