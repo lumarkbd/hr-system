@@ -131,6 +131,7 @@ textarea.form-control{resize:vertical;min-height:80px;}
 .badge-manager_approved{background:transparent;color:var(--teal);border:1px solid var(--teal);}
 .badge-approved{background:transparent;color:var(--green);border:1px solid var(--green);}
 .badge-rejected{background:transparent;color:var(--red);border:1px solid var(--red);}
+.badge-cancelled{background:transparent;color:var(--text3);border:1px solid var(--text3);}
 .badge-late{background:transparent;color:var(--red);border:1px solid var(--red);}
 .badge-on-time{background:transparent;color:var(--green);border:1px solid var(--green);}
 
@@ -275,7 +276,7 @@ tr:hover td{background:var(--surface2);}
 <script>
 const CONFIG = {
   SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbwFHJTrZMXj5skNoDTwF4a7jeyYggpb3uaxHZ3dVsjOuLEutT9PgsVUy3CIcGZZUB5v/exec',
-  CHECKIN_TIME: '09:30',
+  CHECKIN_TIME: '10:00',
   OFFICE_LAT: 25.059892486653364,
   OFFICE_LNG: 121.51849080928085,
   GEO_LIMIT: 50, // 公尺
@@ -313,6 +314,7 @@ const STATUS_LABEL = {
   manager_approved: '待CEO確認',
   approved:         '已核准',
   rejected:         '已拒絕',
+  cancelled:        '已取消',
 };
 
 const S = {
@@ -747,7 +749,7 @@ function renderApprove() {
         return `<tr>
           <td><span class="fw-700">${emp?.name||l.userId}</span><br><span class="text-sm text-muted">${emp?.dept||''}</span></td>
           <td>${lt?.name||l.type}</td>
-          <td>${l.startDate}${l.endDate!==l.startDate?' ~ '+l.endDate:''}</td>
+          <td style='font-size:12px'>${l.startDate}${l.startTime?' '+l.startTime:''} ～ ${l.endDate}${l.endTime?' '+l.endTime:''}</td>
           <td>${l.hours ? l.hours + ' 小時' : (l.days ? l.days*8 + ' 小時' : '-')}</td>
           <td class="text-muted">${l.reason||'-'}</td>
           <td><span class="badge badge-${l.status}">${l.status==='pending'?'主管審批':'CEO確認'}</span></td>
@@ -826,18 +828,31 @@ function renderSettings() {
 
 // ── Modal ──
 function renderModal() {
-  if (S.modal==='leave') return `
+  if (S.modal==='leave') {
+    const timeOpts = `<option value="10:00">10:00</option><option value="10:30">10:30</option><option value="11:00">11:00</option><option value="11:30">11:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option><option value="15:00">15:00</option><option value="15:30">15:30</option><option value="16:00">16:00</option><option value="16:30">16:30</option><option value="17:00">17:00</option><option value="17:30">17:30</option><option value="18:00">18:00</option><option value="18:30">18:30</option><option value="19:00">19:00</option>`;
+    return `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal">
         <div class="modal-title">新增請假申請</div>
         <div class="form-group"><label class="form-label">假別</label>
           <select class="form-control" id="m-type" onchange="updateLeaveModalUI()">${LEAVE_TYPES.map(lt=>`<option value="${lt.id}">${lt.name}</option>`).join('')}</select></div>
-        <div class="form-group"><label class="form-label">請假日期</label>
-          <input type="date" class="form-control" id="m-start" value="${todayStr()}"></div>
-        <div class="form-group"><label class="form-label">請假時數（以 0.5 小時為單位）</label>
-          <select class="form-control" id="m-hours">
-            ${[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8].map(h=>`<option value="${h}">${h} 小時</option>`).join('')}
-          </select>
+        <div class="grid-2">
+          <div class="form-group"><label class="form-label">開始日期</label>
+            <input type="date" class="form-control" id="m-start-date" value="${todayStr()}"></div>
+          <div class="form-group"><label class="form-label">開始時間</label>
+            <select class="form-control" id="m-start-time">${timeOpts}</select></div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group"><label class="form-label">結束日期</label>
+            <input type="date" class="form-control" id="m-end-date" value="${todayStr()}"></div>
+          <div class="form-group"><label class="form-label">結束時間</label>
+            <select class="form-control" id="m-end-time">
+              ${timeOpts.replace('<option value="10:00">10:00</option>','').replace('<option value="10:30">10:30</option>','')}
+              <option value="19:00" selected>19:00</option>
+            </select></div>
+        </div>
+        <div class="form-group">
+          <div id="m-hours-preview" style="font-size:12px;color:var(--text2);padding:8px 0;letter-spacing:.05em">請假時數：計算中…</div>
         </div>
         <div class="form-group"><label class="form-label">請假原因</label>
           <textarea class="form-control" id="m-reason" placeholder="請簡述原因（可選）"></textarea></div>
@@ -854,6 +869,7 @@ function renderModal() {
         </div>
       </div>
     </div>`;
+  }
   if (S.modal==='reject') return `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal">
@@ -1063,20 +1079,78 @@ async function doCheckOut() {
   render();
 }
 
+// 計算請假時數（扣除 12:00-13:00 午休）
+function calcLeaveHours(startDate, startTime, endDate, endTime) {
+  if (!startDate || !startTime || !endDate || !endTime) return 0;
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  const startMs = new Date(startDate + 'T' + startTime).getTime();
+  const endMs   = new Date(endDate   + 'T' + endTime).getTime();
+  if (endMs <= startMs) return 0;
+
+  // 逐天計算
+  let totalHours = 0;
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+  let curDate = new Date(startDate);
+  const lastDate = new Date(endDate);
+
+  while (curDate <= lastDate) {
+    const dateStr = curDate.toISOString().split('T')[0];
+    const isFirst = dateStr === startDate;
+    const isLast  = dateStr === endDate;
+
+    // 當天的開始和結束（分鐘數）
+    const dayStart = isFirst ? sh * 60 + sm : 10 * 60;  // 10:00
+    const dayEnd   = isLast  ? eh * 60 + em : 19 * 60;  // 19:00
+
+    if (dayEnd > dayStart) {
+      let mins = dayEnd - dayStart;
+      // 扣除午休 12:00-13:00 的重疊部分
+      const lunchStart = 12 * 60, lunchEnd = 13 * 60;
+      const overlapStart = Math.max(dayStart, lunchStart);
+      const overlapEnd   = Math.min(dayEnd,   lunchEnd);
+      if (overlapEnd > overlapStart) {
+        mins -= (overlapEnd - overlapStart);
+      }
+      totalHours += mins / 60;
+    }
+    curDate = new Date(curDate.getTime() + ONE_DAY);
+  }
+  // 四捨五入到 0.5
+  return Math.round(totalHours * 2) / 2;
+}
+
 function updateLeaveModalUI() {
   const type = document.getElementById('m-type')?.value;
   const section = document.getElementById('m-receipt-section');
   if (section) section.style.display = type === 'sick' ? 'block' : 'none';
+  updateHoursPreview();
+}
+
+function updateHoursPreview() {
+  const sd = document.getElementById('m-start-date')?.value;
+  const st = document.getElementById('m-start-time')?.value;
+  const ed = document.getElementById('m-end-date')?.value;
+  const et = document.getElementById('m-end-time')?.value;
+  const el = document.getElementById('m-hours-preview');
+  if (!el) return;
+  const h = calcLeaveHours(sd, st, ed, et);
+  el.textContent = h > 0 ? `請假時數：${h} 小時` : '⚠️ 請確認時間區間';
+  el.style.color = h > 0 ? 'var(--green)' : 'var(--red)';
 }
 
 async function submitLeave() {
   const u = S.currentUser;
-  const type   = document.getElementById('m-type').value;
-  const start  = document.getElementById('m-start').value;
-  const hours  = parseFloat(document.getElementById('m-hours').value);
-  const reason = document.getElementById('m-reason').value;
-  if (!start) { toast('請填寫日期'); return; }
-  if (!hours || hours <= 0) { toast('請選擇請假時數'); return; }
+  const type      = document.getElementById('m-type').value;
+  const startDate = document.getElementById('m-start-date').value;
+  const startTime = document.getElementById('m-start-time').value;
+  const endDate   = document.getElementById('m-end-date').value;
+  const endTime   = document.getElementById('m-end-time').value;
+  const reason    = document.getElementById('m-reason').value;
+  if (!startDate || !endDate) { toast('請填寫日期'); return; }
+  const hours = calcLeaveHours(startDate, startTime, endDate, endTime);
+  const start = startDate;
+  if (!hours || hours <= 0) { toast('請確認時間區間'); return; }
   const lt = LEAVE_TYPES.find(x => x.id === type);
   if (!lt.unlimited) {
     const quota = lt.dynamic ? calcAnnualLeave(u.hireDate) : lt.quota;
@@ -1093,7 +1167,8 @@ async function submitLeave() {
   const leaveId = Date.now().toString();
   const leave = {
     id: leaveId, userId: u.id, type,
-    startDate: start, endDate: start,
+    startDate: startDate, endDate: endDate,
+    startTime, endTime,
     hours, days: hours / 8,
     reason, status: 'pending',
     applyDate: new Date().toISOString(),
@@ -1240,6 +1315,19 @@ async function testConnection() {
   toast(res?.ok?'✓ 連線成功':'✗ 連線失敗');
 }
 
+async function cancelLeave(leaveId) {
+  const leave = S.leaves.find(l => l.id === leaveId);
+  if (!leave) return;
+  if (leave.status !== 'pending') { toast('此假單已進入審批流程，無法取消'); return; }
+  if (!confirm('確定要取消這筆請假申請嗎？')) return;
+  const idx = S.leaves.findIndex(l => l.id === leaveId);
+  S.leaves[idx].status = 'cancelled';
+  saveLeaves();
+  toast('假單已取消');
+  await sheetAPI('updateLeaveStatus', { id: leaveId, status: 'cancelled', approvedBy: '' });
+  render();
+}
+
 function openRemoteModal(empId, empName) {
   S._remoteTarget = { id: empId, name: empName };
   S.modal = 'remote';
@@ -1293,6 +1381,13 @@ function startClock() {
 
 function bindEvents() {
   document.addEventListener('keydown', e=>{ if(e.key==='Escape'&&S.modal) closeModal(); },{once:true});
+  // Leave modal live preview
+  ['m-start-date','m-start-time','m-end-date','m-end-time'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', updateHoursPreview);
+  });
+  // Trigger initial UI state for leave modal
+  if (S.modal === 'leave') { updateLeaveModalUI(); updateHoursPreview(); }
 }
 
 // ── Init ──
