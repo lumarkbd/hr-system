@@ -2104,13 +2104,6 @@ async function initApp() {
   loadLocalData();
   render();
   startKeepAlive();
-  // 並行載入初始資料，不逐一等待
-  const [fresh] = await Promise.all([
-    loadEmployeesFromSheets(),
-    loadRemoteSettingsFromSheets(),
-    loadNotifCardsFromSheets(),
-  ]);
-  if (fresh.length>0) { S.employees=fresh; saveEmployees(); }
   S.appReady=true;
   window._fbOnAuth(window._fbAuth, async firebaseUser=>{
     if (firebaseUser) {
