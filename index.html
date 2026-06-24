@@ -1820,6 +1820,7 @@ async function refreshMyAttendanceFromBackend() {
         };
       });
     }
+    render();
   } catch(e) { console.warn('Attendance load error:', e); }
 }
 
